@@ -109,8 +109,27 @@ router.put('/:id', (req, res) => {
     });
 });
 
-router.delete('/:id', (req, res) => {
+router.delete('/:id', async (req, res) => {
   // delete one product by its `id` value
+  try {
+    const productToRemove = req.params.id;
+    if (await Product.findByPk(productToRemove)){
+      Product.destroy({
+        where: {
+          product_id: productToRemove,
+        }
+      })
+    } else {
+      res.status(404).json({
+        message: "No product by this ID. Please try again with a valid ID",
+      })
+    }
+
+  } catch (err) {
+    res.status(500).json({
+      message: "An internal server error occurred."
+    })
+  }
 });
 
 module.exports = router;
