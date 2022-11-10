@@ -1,16 +1,47 @@
 const router = require('express').Router();
+const e = require('express');
 const { Category, Product } = require('../../models');
 
 // The `/api/categories` endpoint
 
-router.get('/', (req, res) => {
+router.get('/', async (req, res) => {
   // find all categories
   // be sure to include its associated Products
+  try {
+    const categories = await Category.findAll({
+      include: [{ model: Product }],
+    });
+
+    res.status(200).json(categories);
+  } catch (err) {
+    res.status(500).json({
+      message: "An internal server error occured"
+    });
+  }
+
 });
 
-router.get('/:id', (req, res) => {
+router.get('/:id', async (req, res) => {
   // find one category by its `id` value
   // be sure to include its associated Products
+  try {
+    const category = await Category.findByPk(req.params.id, {
+      include: [{model: Product}],
+    });
+    if (category){
+      res.status(200).json(category);
+    } else {
+      res.status(404).json({
+        message: `No category with ID ${req.params.id} found`
+      })
+    }
+    
+
+  } catch (err) {
+    res.status(500).json({
+      message: "An internal server error occurred",
+    });
+  }
 });
 
 router.post('/', (req, res) => {
