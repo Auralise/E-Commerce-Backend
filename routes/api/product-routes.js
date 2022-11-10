@@ -1,18 +1,38 @@
+// The `/api/products` endpoint
 const router = require('express').Router();
 const { Product, Category, Tag, ProductTag } = require('../../models');
 
-// The `/api/products` endpoint
 
 // get all products
-router.get('/', (req, res) => {
-  // find all products
-  // be sure to include its associated Category and Tag data
+router.get('/', async (req, res) => {
+  
+    try {
+        const productData = await Product.findAll({
+            order: ['product_name'],
+            include: [{model: Category}, {model: Tag}],
+    });
+    
+    res.status(200).json(productData);
+  } catch (err) {
+    res.status(500).json({message: "Something went wrong!"});
+  }
+
 });
 
 // get one product
-router.get('/:id', (req, res) => {
+router.get('/:id', async (req, res) => {
   // find a single product by its `id`
   // be sure to include its associated Category and Tag data
+
+  try {
+    const productData = await Product.findByPk(req.params.id, {
+        include: [{model: Category}, {model: Tag}],
+    });
+    res.status(200).json(productData);
+  }
+  catch (err) {
+    res.status(500).json({message: "Something went wrong!"});
+  }
 });
 
 // create new product
@@ -89,8 +109,33 @@ router.put('/:id', (req, res) => {
     });
 });
 
-router.delete('/:id', (req, res) => {
+router.delete('/:id', async (req, res) => {
   // delete one product by its `id` value
+  try {
+    const productId = req.params.id;
+    const productToRemove = await Product.findByPk(productId);
+    if (productToRemove){
+      Product.destroy({
+        where: {
+          id: productId,
+        }
+      });
+
+      res.status(200).json ({
+        message: `Product ${productToRemove.product_name} with ID ${productId} has been deleted`,
+      });
+
+    } else {
+      res.status(404).json({
+        message: "No product by this ID. Please try again with a valid ID",
+      })
+    }
+
+  } catch (err) {
+    res.status(500).json({
+      message: "An internal server error occurred."
+    })
+  }
 });
 
 module.exports = router;

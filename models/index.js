@@ -29,8 +29,8 @@ Product.hasMany(ProductTag, {
 });
 
 //Define relationship
-Tag.belongsToMany(Product, { through: ProductTag});
-Product.belongsToMany(Tag, { through: ProductTag});
+Tag.belongsToMany(Product, { through: ProductTag });
+Product.belongsToMany(Tag, { through: ProductTag });
 
 
 module.exports = {
