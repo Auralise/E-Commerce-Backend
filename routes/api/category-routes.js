@@ -46,7 +46,7 @@ router.get('/:id', async (req, res) => {
 router.post('/', async (req, res) => {
   // create a new category
   try {
-    if(req.body.category_name === undefined){
+    if(!req.body.category_name){
       res.status(400).json({
         message: "Please include a category_name in the request body",
       });
@@ -56,7 +56,9 @@ router.post('/', async (req, res) => {
     //pull name off body to prevent issues with invalid input
     const categoryName = req.body.category_name;
 
-    const newCategory = await Category.create(categoryName);
+    const newCategory = await Category.create({
+      category_name: categoryName
+    });
 
     res.status(201).json(newCategory);
 
@@ -67,8 +69,44 @@ router.post('/', async (req, res) => {
   }
 });
 
-router.put('/:id', (req, res) => {
+router.put('/:id', async (req, res) => {
   // update a category by its `id` value
+  try {
+    if(!req.body.category_name){
+      res.status(400).json({
+        message: "Please include a category_name in the request body",
+      });
+    }
+
+    const categoryToUpdate = await Category.findByPk(req.params.id);
+
+    if (categoryToUpdate){
+
+      const updatedCategory = await Category.update({
+        category_name: req.body.category_name,
+      }, 
+      {
+        where: {
+          id: req.params.id,
+        }
+      })
+
+      res.status(200).json({
+        previous: categoryToUpdate,
+        updated: await Category.findByPk(req.params.id)
+      });
+
+    } else {
+      res.status(404).json({
+        message: `No product with ID ${req.params.id} found. Please try again`
+      })
+    }
+
+  } catch (err) {
+    res.status(500).json({
+      message: "An internal server error occurred."
+    });
+  }
 });
 
 router.delete('/:id', (req, res) => {
