@@ -204,7 +204,7 @@ fetch('http://localhost:3001/api/categories/6', options)
 
 #### DELETE /api/categories/\<id>
 
-Delete a specific categore by ID 
+Delete a specific category by ID 
 
 **Warning: This will delete all products in this category**
 
