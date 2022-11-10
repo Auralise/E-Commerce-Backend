@@ -66,8 +66,45 @@ router.post('/', async (req, res) => {
   }
 });
 
-router.put('/:id', (req, res) => {
+router.put('/:id', async (req, res) => {
   // update a tag's name by its `id` value
+  try {
+    if(!req.body.tag_name){
+      res.status(400).json({
+        message: "Please include a tag_name in the request body",
+      });
+      return;
+    }
+
+    const tagToUpdate = await Tag.findByPk(req.params.id);
+    if (tagToUpdate){
+      await Tag.update({
+        tag_name: req.body.tag_name,
+      },
+      {
+        where: {
+          id: req.params.id,
+        }
+      });
+
+      res.status(200).json({
+        message: "Updated Tag successfully",
+        previous: tagToUpdate,
+        updated: await Tag.findByPk(req.params.id)
+      });
+
+    } else {
+      res.status(404).json({
+        message: `No tag with ID ${req.params.id} was found`
+      })
+    }
+
+
+  } catch (err) {
+    res.status(500).json({
+      message: "An internal server error occurred"
+    });
+  }
 });
 
 router.delete('/:id', (req, res) => {

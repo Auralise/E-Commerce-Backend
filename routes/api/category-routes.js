@@ -82,7 +82,7 @@ router.put('/:id', async (req, res) => {
 
     if (categoryToUpdate){
 
-      const updatedCategory = await Category.update({
+      await Category.update({
         category_name: req.body.category_name,
       }, 
       {
@@ -92,6 +92,7 @@ router.put('/:id', async (req, res) => {
       })
 
       res.status(200).json({
+        message: "Updated Category successfully",
         previous: categoryToUpdate,
         updated: await Category.findByPk(req.params.id)
       });
