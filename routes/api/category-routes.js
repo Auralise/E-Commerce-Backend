@@ -109,8 +109,33 @@ router.put('/:id', async (req, res) => {
   }
 });
 
-router.delete('/:id', (req, res) => {
+router.delete('/:id', async (req, res) => {
   // delete a category by its `id` value
+  try {
+
+    const toDelete = await Category.findByPk(req.params.id);
+    if (toDelete){
+
+      const rowsAffected = await Category.destroy({where: {
+        id: req.params.id,
+      }});
+
+      res.status(200).json({
+        message: `Successfully deleted Category ${toDelete.category_name} with ID ${toDelete.id}`
+      })
+
+    } else {
+      res.status(404).json({
+        message: `Unable to find Category with ID ${req.params.id}`,
+      })
+    }
+    
+
+  } catch (err) {
+    res.status(500).json({
+      message: "An internal server error occurred.",
+    });
+  }
 });
 
 module.exports = router;
