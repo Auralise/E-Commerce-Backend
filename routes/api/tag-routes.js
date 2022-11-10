@@ -42,8 +42,28 @@ router.get('/:id', async (req, res) => {
   }
 });
 
-router.post('/', (req, res) => {
+router.post('/', async (req, res) => {
   // create a new tag
+  try {
+    if(!req.body.tag_name){
+      res.status(400).json({
+        message: "Please include a tag_name in the request body"
+      });
+      return;
+    }
+
+    const newTag = await Tag.create({
+      tag_name: req.body.tag_name,
+    });
+
+    res.status(201).json(newTag);
+
+
+  } catch (err) {
+    res.status(500).json({
+      message: "An internal server error occurred",
+    });
+  }
 });
 
 router.put('/:id', (req, res) => {
