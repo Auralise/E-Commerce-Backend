@@ -1,5 +1,4 @@
 const router = require('express').Router();
-const e = require('express');
 const { Category, Product } = require('../../models');
 
 // The `/api/categories` endpoint
@@ -33,7 +32,7 @@ router.get('/:id', async (req, res) => {
     } else {
       res.status(404).json({
         message: `No category with ID ${req.params.id} found`
-      })
+      });
     }
     
 
@@ -44,8 +43,28 @@ router.get('/:id', async (req, res) => {
   }
 });
 
-router.post('/', (req, res) => {
+router.post('/', async (req, res) => {
   // create a new category
+  try {
+    if(req.body.category_name === undefined){
+      res.status(400).json({
+        message: "Please include a category_name in the request body",
+      });
+      return;
+    }
+
+    //pull name off body to prevent issues with invalid input
+    const categoryName = req.body.category_name;
+
+    const newCategory = await Category.create(categoryName);
+
+    res.status(201).json(newCategory);
+
+  } catch (err) {
+    res.status(500).json({
+      message: "An internal server error occurred."
+    });
+  }
 });
 
 router.put('/:id', (req, res) => {
