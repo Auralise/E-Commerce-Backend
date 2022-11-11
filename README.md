@@ -290,10 +290,10 @@ Updateable Fields that can be included in the body are:
 const options = {
   method: 'PUT',
   headers: {'Content-Type': 'application/json'},
-  body: '{"tag_name":"Extra Cheddar"}'
+  body: '{"product_name":"Cheese Wheel Hat","price":151,"stock":10,"tagIds":[5,6,7]}'
 };
 
-fetch('http://localhost:3001/api/tags/9', options)
+fetch('http://localhost:3001/api/products/8', options)
   .then(response => response.json())
   .then(response => console.log(response))
   .catch(err => console.error(err));
