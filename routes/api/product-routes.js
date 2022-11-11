@@ -5,33 +5,29 @@ const { Product, Category, Tag, ProductTag } = require('../../models');
 
 // get all products
 router.get('/', async (req, res) => {
-  
-    try {
-        const productData = await Product.findAll({
-            order: ['product_name'],
-            include: [{model: Category}, {model: Tag}],
+  try {
+    const productData = await Product.findAll({
+      order: ['product_name'],
+      include: [{ model: Category }, { model: Tag }],
     });
-    
+
     res.status(200).json(productData);
   } catch (err) {
-    res.status(500).json({message: "Something went wrong!"});
+    res.status(500).json({ message: "Something went wrong!" });
   }
 
 });
 
 // get one product
 router.get('/:id', async (req, res) => {
-  // find a single product by its `id`
-  // be sure to include its associated Category and Tag data
-
   try {
     const productData = await Product.findByPk(req.params.id, {
-        include: [{model: Category}, {model: Tag}],
+      include: [{ model: Category }, { model: Tag }],
     });
     res.status(200).json(productData);
   }
   catch (err) {
-    res.status(500).json({message: "Something went wrong!"});
+    res.status(500).json({ message: "Something went wrong!" });
   }
 });
 
@@ -68,45 +64,98 @@ router.post('/', (req, res) => {
 });
 
 // update product
-router.put('/:id', (req, res) => {
-  // update product data
-  Product.update(req.body, {
-    where: {
-      id: req.params.id,
-    },
-  })
-    .then((product) => {
-      // find all associated tags from ProductTag
-      return ProductTag.findAll({ where: { product_id: req.params.id } });
-    })
-    .then((productTags) => {
-      // get list of current tag_ids
-      const productTagIds = productTags.map(({ tag_id }) => tag_id);
-      // create filtered list of new tag_ids
-      const newProductTags = req.body.tagIds
-        .filter((tag_id) => !productTagIds.includes(tag_id))
-        .map((tag_id) => {
+router.put('/:id', async (req, res) => {
+  try {
+    //Filter invalid input
+    if (
+      !req.body.product_name &&
+      !req.body.price &&
+      !req.body.stock &&
+      !req.body.category_id &&
+      !req.body.tagIds
+    ) {
+      res.status(400).json({
+        message: "Please provide either a product_name, price, stock, category_id or tagIds field in the body"
+      });
+      return;
+    }
+
+    const productToUpdate = await Product.findByPk(req.params.id);
+
+    if (productToUpdate) {
+
+      await Product.update(req.body, {
+        where: { id: req.params.id },
+      });
+
+      //If the body contains tags
+      if (req.body.tagIds) {
+        const productTags = await ProductTag.findAll({
+          where: { product_id: req.params.id }
+        });
+        // is this used?
+
+        //Validate the tag IDs
+        for (const tagId of req.body.tagIds) {
+          if (!await Tag.findByPk(tagId)) {
+            res.status(400).json({
+              message: `Invalid tag ID ${tagId} found in request body. Please review your submitted tags.`
+            });
+            return;
+          }
+        }
+
+        //Destroy all tags where product id matches
+        //Just a note, I do realise that this is not the best way to do this but considering the scale, this is effective
+        await ProductTag.destroy({
+          where: {
+            product_id: req.params.id,
+          }
+        });
+
+        //structure the objects for bulk creation
+        const newTags = req.body.tagIds.map(id => {
           return {
             product_id: req.params.id,
-            tag_id,
-          };
-        });
-      // figure out which ones to remove
-      const productTagsToRemove = productTags
-        .filter(({ tag_id }) => !req.body.tagIds.includes(tag_id))
-        .map(({ id }) => id);
+            tag_id: id,
+          }
+        })
 
-      // run both actions
-      return Promise.all([
-        ProductTag.destroy({ where: { id: productTagsToRemove } }),
-        ProductTag.bulkCreate(newProductTags),
-      ]);
+        //Create new product tags
+        await ProductTag.bulkCreate(newTags);
+
+        res.status(200).json({
+          message: "Product and tags successfully updated.",
+          product: await Product.findByPk(req.params.id, {
+            include: [{model: Tag}]
+          }),
+        });
+        //Exit function after sending response
+        return;
+
+      }
+
+
+
+      res.status(200).json({
+        message: "Product successfully updated",
+        product: await Product.findByPk(req.params.id, {
+          include: [{model: Tag}]
+        }),
+      })
+
+    } else {
+      res.status(404).json({
+        message: `Unable to find product with ID ${req.params.id}`
+      });
+    }
+  } catch (err) {
+    res.status(500).json({
+      message: "An internal server error occurred",
     })
-    .then((updatedProductTags) => res.json(updatedProductTags))
-    .catch((err) => {
-      // console.log(err);
-      res.status(400).json(err);
-    });
+  }
+
+
 });
 
 router.delete('/:id', async (req, res) => {
@@ -114,14 +163,14 @@ router.delete('/:id', async (req, res) => {
   try {
     const productId = req.params.id;
     const productToRemove = await Product.findByPk(productId);
-    if (productToRemove){
+    if (productToRemove) {
       Product.destroy({
         where: {
           id: productId,
         }
       });
 
-      res.status(200).json ({
+      res.status(200).json({
         message: `Product ${productToRemove.product_name} with ID ${productId} has been deleted`,
       });
 
